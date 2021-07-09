@@ -1,0 +1,80 @@
+import nltk.chunk
+import itertools
+from nltk.chunk import RegexpParser
+nltk.download('averaged_perceptron_tagger')
+
+# making a list of data
+import tarfile
+tar = tarfile.open("20061020_20131126_bloomberg_news.tar.gz")
+bloomberg = tar.getnames()
+tar.close()
+
+bloom_times = []
+headlines = []
+
+# separating time and headline from data. indexes correspond
+for each in bloomberg:
+    bloom_times.append(each[33:43])
+    headlines.append(each[44:])
+
+# headlines into list of words
+def convert(sent):
+    new_sent = sent.replace('-', ' ')
+    return (new_sent.split())
+
+times = []
+new_headlines = []
+
+# remove empty elements
+for i, text in enumerate(headlines):
+    if (text != ''):
+        times.append(bloom_times[i])
+        new_headlines.append(convert(text))
+        
+# tag words in headlines
+for i, text in enumerate(new_headlines):
+    new_headlines[i] = nltk.pos_tag(text)
+    
+# convert headlines to event phrase tuples    
+def event_phrase(sent):
+    # define grammar
+    chunker = RegexpParser(r'''
+    NP:
+    {<DT><.*>*<NN.*>}
+    <NN.*>}{<.*>
+    <.*>}{<DT>
+    <NN.*>{}<NN.*>
+    ''')
+        
+    # create tree of suitable chunks    
+    class TagChunker(nltk.chunk.ChunkParserI):
+        def __init__(self, chunk_tagger):
+            self._chunk_tagger = chunk_tagger
+     
+        def parse(self, tokens):
+            # split words and part of speech tags
+            (words, tags) = zip(*tokens)
+            # get IOB chunk tags
+            chunks = self._chunk_tagger.tag(tags)
+            # join words with chunk tags
+            wtc = itertools.izip(words, chunks)
+            # w = word, t = part-of-speech tag, c = chunk tag
+            lines = [' '.join([w, t, c]) for (w, (t, c)) in wtc if c]
+            # create tree from conll formatted chunk lines
+            return nltk.chunk.conllstr2tree('\n'.join(lines))
+    
+    # sentence should be a parsed list of words
+    tree = chunker.parse(sent)
+    print(tree)
+    event = []
+
+    # for each noun phrase sub tree in the parse tree, append to event phrase list
+    for subtree in tree.subtrees(filter=lambda t: t.label() == 'NP'):
+        event.append(" ".join([a for (a,b) in subtree.leaves()]))
+    
+    return event
+
+phrases = []
+
+for line in new_headlines:
+    phrases.append( event_phrase(line) )
