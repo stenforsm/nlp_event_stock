@@ -1,0 +1,76 @@
+# This code should fetch the raw Bloomberg data. Filter for relevant companies, creating respective txt files for headlines and csv files for dates
+
+
+# create text files for company news
+BAn = open('boeing_news.txt', 'w')
+GOOGn = open('google_news.txt', 'w')
+SBUXn = open('starbucks_news.txt', 'w')
+Vn = open('visa_news.txt', 'w')
+WMTn = open('walmart_news.txt', 'w')
+
+# fetch bloomberg data
+import tarfile
+tar = tarfile.open("20061020_20131126_bloomberg_news.tar.gz")
+bloomberg = tar.getnames()
+tar.close()
+
+times = []
+headlines = []
+
+# separate times and headlines
+for each in bloomberg:
+    times.append(each[33:43])
+    headlines.append(each[44:])
+
+BAt = []
+GOOGt = []
+SBUXt = []
+Vt = []
+WMTt = []
+
+# no need to check if headline is empty because we are selecting for company news only
+    
+for i, text in enumerate(headlines):
+    if 'boeing' in text:
+        # words should be separated by space, not -
+        # print each headline on new line
+        BAn.write(text.replace('-', ' ') + "\n")
+        # corresponding news dates go into premade lists, in order
+        BAt.append(times[i])
+    if 'google' in text:
+        GOOGn.write(text.replace('-', ' ') + "\n")
+        GOOGt.append(times[i])
+    if 'starbucks' in text:
+        SBUXn.write(text.replace('-', ' ') + "\n")
+        SBUXt.append(times[i])
+    if 'visa' in text:
+        Vn.write(text.replace('-', ' ') + "\n")
+        Vt.append(times[i])
+    if 'walmart' in text:
+        WMTn.write(text.replace('-', ' ') + "\n")
+        WMTt.append(times[i])
+
+# close text files
+BAn.close()
+GOOGn.close()
+SBUXn.close()
+Vn.close()
+WMTn.close()
+
+# put time arrays into csv files
+import pandas as pd
+
+df = pd.DataFrame(BAt, columns=["News date"])
+df.to_csv('boeing_bl.csv', index=False)
+
+df = pd.DataFrame(GOOGt, columns=["News date"])
+df.to_csv('google_bl.csv', index=False)
+
+df = pd.DataFrame(SBUXt, columns=["News date"])
+df.to_csv('starbucks_bl.csv', index=False)
+
+df = pd.DataFrame(Vt, columns=["News date"])
+df.to_csv('visa_bl.csv', index=False)
+
+df = pd.DataFrame(WMTt, columns=["News date"])
+df.to_csv('walmart_bl.csv', index=False)
